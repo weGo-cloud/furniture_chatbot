@@ -7,7 +7,7 @@ from datetime import datetime
 
 from fastapi import Depends, FastAPI, File, Header, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from pydantic import BaseModel, Field, field_validator
 
 import agent
@@ -46,6 +46,11 @@ app = FastAPI(title="Business AI Agent API", docs_url=None if _prod else "/docs"
 # the tenant key plus the per-tenant allowed_origins check in tenant_public(). Static CORS can't express per-tenant origins.
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 app.include_router(whatsapp.router)
+
+if not _prod:
+    @app.get("/", include_in_schema=False)
+    def local_home():
+        return RedirectResponse(url="/docs")
 
 
 # -------------------------------------------------------------- auth deps
