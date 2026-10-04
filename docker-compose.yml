@@ -1,0 +1,30 @@
+services:
+  app:
+    build: .
+    env_file: .env
+    environment:
+      ENV: production
+      FORWARDED_ALLOW_IPS: "*"   # safe here ONLY because the app port is not published; Caddy is the sole entry point
+    volumes:
+      - agent-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+  caddy:                      # free automatic HTTPS (Let's Encrypt)
+    image: caddy:2
+    ports: ["80:80", "443:443"]
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on: [app]
+    restart: unless-stopped
+volumes:
+  agent-data:
+  caddy-data:
+  caddy-config:
