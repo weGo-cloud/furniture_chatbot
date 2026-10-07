@@ -102,6 +102,7 @@ import app as appmod  # noqa: E402
 c = TestClient(appmod.app)
 SA = {"x-super-key": SUPER}
 SAMPLE = (ROOT / "sample_products.csv").read_text()
+AMAZON_SAMPLE = (ROOT / "furniture_products_dataset_from_amazon_sample.csv").read_text(encoding="utf-8-sig")
 
 
 def make_tenant(tid, config=None):
@@ -125,6 +126,30 @@ def tools_for(tid="demo", session="t"):
 
 
 # ------------------------------------------------------------------- tests
+def test_amazon_sample_inventory_import():
+    from tools.amazon_sample_to_catalog import convert_csv
+
+    converted, stats = convert_csv(AMAZON_SAMPLE)
+    rows = catalog.parse_csv(converted)
+    assert stats["products"] == len(rows) > 0
+    assert stats["products"] + stats["skipped_missing_title"] + stats["skipped_missing_price"] + \
+        stats["skipped_duplicate_id"] == stats["source_rows"]
+    assert rows[0]["id"].startswith("B0"), "Amazon ASINs should remain the inventory product IDs"
+    assert rows[0]["category"] == "Free Standing Shoe Racks"
+    assert rows[0]["price"] == 24.99 and rows[0]["stock"] == 13
+
+    _, admin_key = make_tenant("amazon-test", {"currency": "USD"})
+    result = c.post(
+        "/api/v1/amazon-test/catalog",
+        files={"file": ("amazon-sample.csv", converted)},
+        headers={"x-admin-key": admin_key},
+    )
+    assert result.status_code == 200 and result.json()["products"] == len(rows), result.text
+    assert len(db.filter_products("amazon-test")) == len(rows)
+    assert db.get_tenant("amazon-test")["config"]["currency"] == "USD"
+    assert c.get("/widget").status_code == 200
+
+
 def test_session_leak_attack():
     """A web caller must NOT be able to read a WhatsApp customer's history by guessing 'wa:<phone>'."""
     db.add_message("demo", "wa:254712345678", "user", "my secret budget is 100k")

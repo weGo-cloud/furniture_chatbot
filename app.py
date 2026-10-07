@@ -4,6 +4,7 @@ import secrets
 import threading
 import time
 from datetime import datetime
+from pathlib import Path
 
 from fastapi import Depends, FastAPI, File, Header, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -100,7 +101,7 @@ def health():
 
 @app.get("/widget")
 def widget():
-    return FileResponse("static/widget.html")
+    return FileResponse(Path(__file__).resolve().parent / "static" / "widget.html")
 
 
 class ChatIn(BaseModel):

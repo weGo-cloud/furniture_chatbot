@@ -5,11 +5,12 @@ LLM: any OpenAI-compatible API (default Groq free tier) · Embeddings: local/fre
 ## Run locally
 ```
 pip install -r requirements.txt
-cp .env.example .env          # set LLM_API_KEY and SUPER_ADMIN_KEY
-python seed_demo.py           # creates tenant "demo" + sample catalog, prints keys + widget URL
+test -f .env || cp .env.example .env   # keep an existing .env and its API keys unchanged
+# If starting from .env.example, set LLM_API_KEY and SUPER_ADMIN_KEY in .env
+python seed_demo.py           # creates demo + sample catalog on first use; preserves an existing demo catalog
 uvicorn app:app --reload
 ```
-Open the printed `/widget?t=demo&k=<public_key>` URL, or `python chat_cli.py demo <public_key>`.
+Open the printed `http://127.0.0.1:8000/widget?t=demo&k=<public_key>` URL. Keep the server running in its terminal; the widget sends messages to that same server. To embed it on a site, use the iframe example below. For a command-line chat instead, run `python chat_cli.py demo <public_key>`.
 
 ## Onboard a client
 ```
@@ -41,11 +42,30 @@ See DEPLOY.md for promotions, business_facts and the production setup. Offers ar
 
 Run `python tests/test_hardening.py` after any change. See DEPLOY.md for production settings.
 
-## Test with a Kaggle dataset
+## Try the bundled Amazon sample inventory
+The included `furniture_products_dataset_from_amazon_sample.csv` is source data, not yet in the app's upload format. Convert it locally (no Kaggle download or extra packages needed):
 ```
-pip install kagglehub pandas
-python tools/kaggle_to_catalog.py --rate 130 --round-to 100      # downloads + converts -> catalog.csv
-curl -X POST http://localhost:8000/api/v1/demo/catalog -H "X-Admin-Key: ak_YOURKEY" -F file=@catalog.csv
+python tools/amazon_sample_to_catalog.py
 ```
-Then chat at `/widget?t=demo&k=pk_YOURKEY` (or `python chat_cli.py demo pk_YOURKEY`). Lost your keys? With the server running:
+
+Create a separate test tenant so this sample does not replace the demo or a customer's catalog. Use the existing `SUPER_ADMIN_KEY` from `.env` (make it available to this shell if it is not already exported; do not replace the key):
+```
+curl -X POST http://localhost:8000/admin/tenants \
+  -H "X-Super-Key: $SUPER_ADMIN_KEY" -H "Content-Type: application/json" \
+  -d '{"tenant_id":"amazon-test","business_name":"Amazon Sample Test","config":{"currency":"USD"}}'
+```
+Save the returned `admin_key` and `widget_path`, then upload the converted CSV using the returned admin key:
+```
+curl -X POST http://localhost:8000/api/v1/amazon-test/catalog \
+  -H "X-Admin-Key: ak_RETURNED_ADMIN_KEY" -F file=@amazon_sample_catalog.csv
+```
+Open `http://localhost:8000` followed by the returned `widget_path` (for example `/widget?t=amazon-test&k=pk_RETURNED_PUBLIC_KEY`) to chat against the test inventory. In the widget, ask about products, categories, and prices. Prices are left in USD. The CSV's availability is a snapshot, not live stock: explicit counts are retained, “In Stock” is represented as a minimum of one, and unavailable items as zero. Use the admin product PATCH endpoint to test stock changes.
+
+Repeated ASIN rows are deduplicated, and rows with missing prices are skipped rather than assigned made-up prices. The converter writes `amazon_sample_catalog.csv`; it is ignored by git. The generic Kaggle/local CSV converter remains available separately:
+```
+pip install -r requirements-tools.txt
+python tools/kaggle_to_catalog.py --rate 130 --round-to 100
+```
+
+Lost demo keys? With the server running:
 `curl -X POST http://localhost:8000/admin/tenants/demo/reset-keys -H "X-Super-Key: <SUPER_ADMIN_KEY from .env>"` (issues new keys, so use the new pk_ in the widget URL).

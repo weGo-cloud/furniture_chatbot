@@ -1,9 +1,10 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Chat</title>
+<title>Furniture chat</title>
 <style>
-*{box-sizing:border-box}body{margin:0;font:15px system-ui,sans-serif;background:#f4f1ec;height:100vh;display:flex;flex-direction:column}
+*{box-sizing:border-box}body{margin:0;font:15px system-ui,sans-serif;background:#f4f1ec;height:100vh;height:100dvh;display:flex;flex-direction:column}
+header{padding:12px 14px;background:#2f5d50;color:#fff;font-weight:600}
 #log{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px}
 .m{max-width:82%;padding:9px 13px;border-radius:14px;white-space:pre-wrap;line-height:1.4}
 .u{align-self:flex-end;background:#2f5d50;color:#fff}.b{align-self:flex-start;background:#fff;color:#222}
@@ -11,23 +12,34 @@ form{display:flex;gap:8px;padding:10px;background:#fff;border-top:1px solid #ddd
 input{flex:1;padding:11px;border:1px solid #ccc;border-radius:10px;font:inherit}
 #p{padding:6px 12px 10px;font-size:11px;color:#777;background:#fff;text-align:center}
 button{padding:0 18px;border:0;border-radius:10px;background:#2f5d50;color:#fff;font:inherit}
+button:disabled,input:disabled{opacity:.6}
 </style></head><body>
-<div id="log"></div>
-<form id="f"><input id="i" placeholder="Ask about our products or book a visit..." autocomplete="off" maxlength="1500"><button>Send</button></form>
+<header>Furniture assistant</header>
+<div id="log" role="log" aria-live="polite" aria-relevant="additions text"></div>
+<form id="f"><input id="i" aria-label="Your message" placeholder="Ask about our products or book a visit..." autocomplete="off" maxlength="1500"><button id="send" type="submit">Send</button></form>
 <div id="p">We keep your chat and any contact details you share to help with your enquiry. Ask the shop to delete them at any time.</div>
 <script>
 const p=new URLSearchParams(location.search),T=p.get("t"),K=p.get("k");
-let sid=localStorage.getItem("sid")||("web-"+Math.random().toString(36).slice(2)+Date.now().toString(36));
-localStorage.setItem("sid",sid);
-const log=document.getElementById("log"),i=document.getElementById("i");
+const log=document.getElementById("log"),i=document.getElementById("i"),send=document.getElementById("send");
+const newSession=()=>"web-"+Math.random().toString(36).slice(2)+Date.now().toString(36);
 function add(t,c){const d=document.createElement("div");d.className="m "+c;d.textContent=t;log.appendChild(d);log.scrollTop=log.scrollHeight;return d}
-add("Hi! How can I help you today?","b");
+let sid=newSession();
+let storageWarning="";
+if(T){
+  try{const key="furniture-chat-session:"+T;sid=localStorage.getItem(key)||sid;localStorage.setItem(key,sid)}
+  catch(_){storageWarning="This browser cannot save your chat session, so your chat may not continue after reloading."}
+}
+if(!T||!K){add("This chat link is incomplete. Please open the full link provided by the shop.","b");i.disabled=true;send.disabled=true}
+else add("Hi! How can I help you today?","b");
+if(storageWarning)add(storageWarning,"b");
 document.getElementById("f").onsubmit=async e=>{
-  e.preventDefault();const t=i.value.trim();if(!t)return;i.value="";add(t,"u");const w=add("…","b");
+  e.preventDefault();const t=i.value.trim();if(!t||!T||!K||send.disabled)return;i.value="";add(t,"u");const w=add("…","b");
+  i.disabled=true;send.disabled=true;send.textContent="Sending…";
   try{
-    const r=await fetch(`/api/v1/${T}/chat`,{method:"POST",headers:{"Content-Type":"application/json","X-Tenant-Key":K},body:JSON.stringify({session_id:sid,message:t})});
-    const j=await r.json();w.textContent=r.ok?j.response:(j.detail||"Something went wrong.");
-  }catch(_){w.textContent="Connection problem. Please try again."}
-  log.scrollTop=log.scrollHeight;
+    const r=await fetch(`/api/v1/${encodeURIComponent(T)}/chat`,{method:"POST",headers:{"Content-Type":"application/json","X-Tenant-Key":K},body:JSON.stringify({session_id:sid,message:t})});
+    const j=await r.json().catch(()=>({}));
+    w.textContent=r.ok?(j.response||"I couldn't prepare a reply. Please try again."):(j.detail||"Something went wrong.");
+  }catch(_){w.textContent="Connection problem. Please check your connection and try again."}
+  finally{i.disabled=false;send.disabled=false;send.textContent="Send";i.focus();log.scrollTop=log.scrollHeight}
 };
 </script></body></html>
