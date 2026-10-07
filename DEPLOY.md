@@ -10,13 +10,6 @@ curl https://$DOMAIN/health
 ```
 Caddy fetches the HTTPS certificate automatically. The app port is not exposed publicly; only Caddy (80/443) is.
 
-## Local development
-Set `LLM_API_KEY` in `.env`, then run the app directly (without the production Caddy proxy):
-```
-docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build app
-```
-Open `http://localhost:8000/docs`. The local override enables development mode and binds port 8000 to loopback only; do not use it for production.
-
 ## First client
 ```
 H="https://$DOMAIN"
