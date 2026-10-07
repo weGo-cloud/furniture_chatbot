@@ -9,14 +9,14 @@ ENV = os.getenv("ENV", "development")
 DATA_DIR = Path(os.getenv("DATA_DIR", "./data"))
 
 LLM_BASE_URL = os.getenv("LLM_BASE_URL", "https://api.groq.com/openai/v1")
-LLM_API_KEY = os.getenv("LLM_API_KEY", "")
+LLM_API_KEY = os.getenv("LLM_API_KEY", "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")
 LLM_MODEL = os.getenv("LLM_MODEL", "llama-3.3-70b-versatile")
 # Optional second model, used automatically when the primary fails or is rate-limited.
 LLM_FALLBACK_BASE_URL = os.getenv("LLM_FALLBACK_BASE_URL", "")
 LLM_FALLBACK_API_KEY = os.getenv("LLM_FALLBACK_API_KEY", "")
 LLM_FALLBACK_MODEL = os.getenv("LLM_FALLBACK_MODEL", "gpt-4o-mini")
 
-SUPER_ADMIN_KEY = os.getenv("SUPER_ADMIN_KEY", "")
+SUPER_ADMIN_KEY = os.getenv("SUPER_ADMIN_KEY", "dickens_the_developer_of_wegotechnologie@130")
 SECRETS_KEY = os.getenv("SECRETS_KEY", "")  # Fernet key: encrypts stored WhatsApp tokens
 
 SMTP_HOST = os.getenv("SMTP_HOST", "")
