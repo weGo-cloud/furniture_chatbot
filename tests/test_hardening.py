@@ -82,10 +82,14 @@ class ScriptLLM:
 
 
 class Raiser:
+    def __init__(self):
+        self.calls = 0
+
     def bind_tools(self, tools):
         return self
 
     def invoke(self, messages):
+        self.calls += 1
         raise RuntimeError("429 rate limited")
 
 
@@ -298,8 +302,10 @@ def test_fallback_llm_when_primary_fails():
     HOLD["llm"], HOLD["fb"] = Raiser(), ScriptLLM([AIMessage(content="from fallback")])
     try:
         assert chat("fbsession", "hi").json()["response"] == "from fallback"
-        HOLD["fb"] = None
-        assert "busy" in chat("fbsession2", "hi").json()["response"]  # no fallback -> graceful message, no crash
+        primary, fallback = Raiser(), Raiser()
+        HOLD["llm"], HOLD["fb"] = primary, fallback
+        assert "busy" in chat("fbsession2", "hi").json()["response"]
+        assert primary.calls == fallback.calls == 1, "a failed request was retried against the same models"
     finally:
         HOLD["llm"], HOLD["fb"] = ScriptLLM(), None
 

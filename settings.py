@@ -16,7 +16,7 @@ LLM_FALLBACK_BASE_URL = os.getenv("LLM_FALLBACK_BASE_URL", "")
 LLM_FALLBACK_API_KEY = os.getenv("LLM_FALLBACK_API_KEY", "")
 LLM_FALLBACK_MODEL = os.getenv("LLM_FALLBACK_MODEL", "gpt-4o-mini")
 
-SUPER_ADMIN_KEY = os.getenv("SUPER_ADMIN_KEY", "dickens_the_developer_of_wegotechnologie@130")
+SUPER_ADMIN_KEY = os.getenv("SUPER_ADMIN_KEY", "_ZQuaL8604oWew03v4Z84dqEBcaisEbf9IocGtvJC4w")
 SECRETS_KEY = os.getenv("SECRETS_KEY", "")  # Fernet key: encrypts stored WhatsApp tokens
 
 SMTP_HOST = os.getenv("SMTP_HOST", "")

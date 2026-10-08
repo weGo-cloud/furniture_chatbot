@@ -249,12 +249,14 @@ def _invoke(bound, messages, fallback=None):
         return bound.invoke(messages)
     except Exception:
         log.exception("Primary LLM call failed")
+        if fallback is None:
+            raise
     if fallback is not None:
         try:
             return fallback.invoke(messages)
         except Exception:
             log.exception("Fallback LLM call failed")
-    return bound.invoke(messages)  # last retry on the primary; raises if still failing
+            raise
 
 
 def run_agent(tenant: dict, session_id: str, user_text: str, default_phone: str = "") -> str:

@@ -315,3 +315,17 @@ def stats(tenant_id: str, tenant: dict = Depends(tenant_admin)):
     cfg = tenant["config"]
     return {**db.stats(tenant_id), "messages_today": db.messages_today(tenant_id, cfg["timezone"]),
             "daily_message_limit": cfg["daily_message_limit"]}
+
+
+import os
+from fastapi.staticfiles import StaticFiles
+
+# Check if static directory exists and mount it
+if os.path.exists("static"):
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+
+    from fastapi.responses import RedirectResponse
+
+@app.get("/")
+def read_root():
+    return RedirectResponse(url="/static/widget.html?t=demo&k=pk_kYq1EaBbhS0rWf1PtE4mW1sF")
